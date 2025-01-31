@@ -1,6 +1,9 @@
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, random_split, DataLoader
+import torch.nn as nn
+import torch.optim as optim
+
 
 # Data Generation
 n_total = 100
@@ -33,3 +36,22 @@ train_data, val_data = random_split(dataset, [n_train, n_val])
 # build training and validation dataloader
 train_loader = DataLoader(dataset=train_data, batch_size=16, shuffle=True)
 val_loader = DataLoader(dataset=val_data, batch_size=16)
+
+
+# Model Configuration
+# set device
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+# set learning rate
+lr = 0.1
+
+# define model
+torch.manual_seed(42)
+model = nn.Sequential()
+model.add_module('linear', nn.Linear(1, 1))
+
+# define loss function
+loss_fn = nn.MSELoss(reduction='mean')
+
+# define optimizer
+optimizer = optim.SGD(model.parameters(), lr)
