@@ -5,6 +5,43 @@ import torch.nn as nn
 import torch.optim as optim
 
 
+def build_train_step(model, loss_fn, optimizer):
+    def perform_train_step(x, y):
+        model.train()
+        # step 1 - compute model's prediction
+        yhat = model(x)
+        # step 2 - compute the loss
+        loss = loss_fn(yhat, y)
+        # step 3 - compute the gradients
+        loss.backward()
+        # step 4 - update the parameters
+        optimizer.step()
+        optimizer.zero_grad()
+        # return the loss value
+        return loss.item()
+    return perform_train_step
+
+def build_val_step(model, loss_fn):
+    def perform_val_step(x, y):
+        model.eval()
+        # step 1 - compute model's prediction
+        yhat = model(x)
+        # step 2 - compute the loss
+        loss = loss_fn(yhat, y)
+        # return the loss value
+        return loss.item()
+    return perform_val_step
+
+def mini_batch(device, data_loader, step):
+    mini_batch_losses = []
+    for x_batch, y_batch in data_loader:
+        x_batch = x_batch.to(device)
+        y_batch = y_batch.to(device)
+        mini_batch_loss = step(x_batch, y_batch)
+        mini_batch_losses.append(mini_batch_loss)
+    return np.mean(mini_batch_losses)
+
+
 # Data Generation
 n_total = 100
 true_b = 1
@@ -55,3 +92,24 @@ loss_fn = nn.MSELoss(reduction='mean')
 
 # define optimizer
 optimizer = optim.SGD(model.parameters(), lr)
+
+# create step function for training and validating our model
+train_step = build_train_step(model, loss_fn, optimizer)
+val_step = build_val_step(model, loss_fn)
+
+
+# Model Training
+# set number of epoch
+n_epochs = 200
+
+# placeholders for training and validation loss values
+train_losses, val_losses = [], []
+
+for epoch in range(n_epochs):
+    train_loss = mini_batch(device, train_loader, train_step)
+    train_losses.append(train_loss)
+    with torch.no_grad():
+        val_loss = mini_batch(device, val_loader, val_step)
+        val_losses.append(val_loss)
+
+print(model.state_dict())
